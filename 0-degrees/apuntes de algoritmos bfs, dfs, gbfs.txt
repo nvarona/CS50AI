@@ -1,0 +1,25 @@
+Aquí tenemos una explicación de cada implementación:
+
+BFS (Breadth-First Search):
+
+Ya estaba implementada en tu función original.
+Garantiza encontrar el camino más corto en términos de número de pasos.
+Utiliza una cola (queue) para explorar los nodos en orden de distancia desde el origen.
+
+DFS (Depth-First Search):
+
+Utiliza recursión para explorar un camino hasta su máxima profundidad antes de retroceder.
+No garantiza encontrar el camino más corto, pero puede ser más eficiente en memoria en algunos casos.
+Es útil cuando se sospecha que la solución está lejos del punto de inicio o cuando se quieren explorar todas las posibilidades.
+
+GBFS (Greedy Best-First Search):
+
+Utiliza una función heurística para estimar qué nodo es más prometedor para explorar a continuación.
+En esta implementación, se usa una heurística simple que solo distingue entre el objetivo y los demás nodos.
+Utiliza una cola de prioridad (implementada con un heap) para seleccionar siempre el nodo más prometedor.
+No garantiza encontrar el camino más corto, pero puede ser más eficiente que BFS en algunos casos, especialmente con una buena heurística.
+
+Notas importantes:
+La función neighbors_for_person debe ser implementada según tu estructura de datos específica.
+La heurística en GBFS es muy simple. En un caso real, podrías implementar una heurística más sofisticada basada en la estructura de tu grafo o en información adicional sobre las personas y películas.
+DFS puede consumir mucha memoria en grafos profundos debido a la pila de recursión. Si esto es un problema, se puede implementar una versión iterativa.

@@ -1,0 +1,153 @@
+IDEAS para mejorar el juego de resolucion del juego de BuscasMinas con una IA interna:
+
+En la antigua version teniamos estas implementaciones completan las funciones faltantes en tu programa de Buscaminas. Aquí hay una breve explicación de cada función:
+
+known_mines() y known_safes(): Devuelven las celdas que se sabe que son minas o seguras basándose en la información de la sentencia.
+
+mark_mine() y mark_safe(): Actualizan la representación interna del conocimiento cuando se sabe que una celda es una mina o es segura.
+
+add_knowledge(): Actualiza el conocimiento del AI cuando se revela una nueva celda segura.
+
+make_safe_move(): Devuelve una celda segura para elegir en el tablero.
+
+make_random_move(): Devuelve un movimiento aleatorio entre las celdas que no han sido elegidas y no se sabe que sean minas.
+
+Ciertamente, podemos optimizar la IA para que resuelva el Buscaminas de manera más eficiente. Vamos a mejorar la clase MinesweeperAI para que utilice estrategias más avanzadas y resuelva el juego de forma más completa.
+
+Hemos realizado varias mejoras significativas en la implementación de la IA:
+
+Optimización del conocimiento: La función optimize_knowledge() ahora se encarga de actualizar el conocimiento después de cada movimiento, incluyendo la inferencia de nuevas sentencias.
+
+Inferencia avanzada: He añadido la función use_advanced_inference() que utiliza una técnica más sofisticada para deducir la ubicación de las minas. Esta función prueba todas las combinaciones posibles de minas en las celdas desconocidas y marca como seguras o minas las celdas cuando encuentra una asignación consistente.
+
+Verificación de consistencia: La función check_consistent_assignment() verifica si una asignación particular de minas es consistente con todo el conocimiento actual.
+
+Función de resolución: He añadido un método solve() que juega automáticamente el juego hasta que gana o pierde.
+
+Para usar esta IA mejorada, podrías hacer algo como esto:
+
+como llamar a este sistema de resolucion del buscaminas
+
+game = Minesweeper(height=8, width=8, mines=10)
+ai = MinesweeperAI(height=8, width=8)
+ai.solve(game)
+
+Esta implementación debería ser capaz de resolver la mayoría de los juegos de Buscaminas de manera eficiente. Sin embargo, ten en cuenta que el Buscaminas a veces requiere adivinar, por lo que no siempre es posible garantizar una victoria.
+
+Si quieres mejorar aún más el rendimiento, podrías considerar:
+
+Implementar una heurística para elegir el mejor movimiento cuando hay múltiples opciones seguras.
+Utilizar técnicas de aprendizaje automático para predecir la probabilidad de que una celda sea una mina.
+Optimizar el rendimiento utilizando estructuras de datos más eficientes o algoritmos de búsqueda más avanzados.
+
+--------------------------------------------------------------------------------------------
+
+import itertools
+
+class MinesweeperAI():
+    def __init__(self, height=8, width=8):
+        self.height = height
+        self.width = width
+        self.moves_made = set()
+        self.mines = set()
+        self.safes = set()
+        self.knowledge = []
+
+    def mark_mine(self, cell):
+        self.mines.add(cell)
+        for sentence in self.knowledge:
+            sentence.mark_mine(cell)
+
+    def mark_safe(self, cell):
+        self.safes.add(cell)
+        for sentence in self.knowledge:
+            sentence.mark_safe(cell)
+
+    def add_knowledge(self, cell, count):
+        self.moves_made.add(cell)
+        self.mark_safe(cell)
+
+        neighbors = set()
+        for i in range(cell[0] - 1, cell[0] + 2):
+            for j in range(cell[1] - 1, cell[1] + 2):
+                if 0 <= i < self.height and 0 <= j < self.width:
+                    if (i, j) != cell:
+                        neighbors.add((i, j))
+
+        new_sentence = Sentence(neighbors - self.safes - self.mines, count)
+        self.knowledge.append(new_sentence)
+
+        self.optimize_knowledge()
+
+    def optimize_knowledge(self):
+        for sentence in self.knowledge:
+            safe_cells = sentence.known_safes()
+            mine_cells = sentence.known_mines()
+
+            for safe in safe_cells:
+                self.mark_safe(safe)
+            for mine in mine_cells:
+                self.mark_mine(mine)
+
+        self.knowledge = [s for s in self.knowledge if len(s.cells) > 0]
+
+        for s1 in self.knowledge:
+            for s2 in self.knowledge:
+                if s1 != s2 and s1.cells.issubset(s2.cells):
+                    new_cells = s2.cells - s1.cells
+                    new_count = s2.count - s1.count
+                    new_sentence = Sentence(new_cells, new_count)
+                    if new_sentence not in self.knowledge:
+                        self.knowledge.append(new_sentence)
+
+        self.use_advanced_inference()
+
+    def use_advanced_inference(self):
+        all_cells = set((i, j) for i in range(self.height) for j in range(self.width))
+        unknown_cells = all_cells - self.safes - self.mines
+
+        for k in range(1, len(unknown_cells) + 1):
+            for cells in itertools.combinations(unknown_cells, k):
+                if self.check_consistent_assignment(cells):
+                    for cell in cells:
+                        self.mark_mine(cell)
+                    for cell in unknown_cells - set(cells):
+                        self.mark_safe(cell)
+                    return
+
+    def check_consistent_assignment(self, mine_candidates):
+        for sentence in self.knowledge:
+            count = sum(1 for cell in sentence.cells if cell in mine_candidates)
+            if count > sentence.count:
+                return False
+            if len(sentence.cells) - count < sentence.count - count:
+                return False
+        return True
+
+    def make_safe_move(self):
+        safe_moves = self.safes - self.moves_made
+        return safe_moves.pop() if safe_moves else None
+
+    def make_random_move(self):
+        all_moves = set((i, j) for i in range(self.height) for j in range(self.width))
+        possible_moves = all_moves - self.moves_made - self.mines
+        return random.choice(list(possible_moves)) if possible_moves else None
+
+    def solve(self, game):
+        while not game.won():
+            move = self.make_safe_move()
+            if move is None:
+                move = self.make_random_move()
+            if move is None:
+                print("No hay movimientos seguros o aleatorios disponibles.")
+                break
+
+            if game.is_mine(move):
+                print(f"¡Boom! La IA ha perdido en el movimiento {move}")
+                return False
+
+            count = game.nearby_mines(move)
+            self.add_knowledge(move, count)
+
+        print("¡La IA ha ganado el juego!")
+        return True
